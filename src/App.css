@@ -1,0 +1,120 @@
+/* Home */
+#home {
+  padding: 3rem 0;
+  text-align: center;
+}
+
+.hero-img {
+  width: 140px;
+  height: auto;
+  margin: 0 auto 1rem;
+  display: block;
+}
+
+#home h1 {
+  font-size: 2.5rem;
+  margin: 0 0 0.5rem;
+}
+
+#home p {
+  color: var(--text-color2);
+  margin: 0 0 2rem;
+}
+
+/* Search bar */
+#search-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+#search-wrap input,
+#search-wrap select {
+  height: 36px;
+  padding: 0 10px;
+  background: #fff;
+  color: var(--text-color2);
+  border: 0.5px solid black;
+  border-radius: 3px;
+  font-size: 0.9rem;
+}
+
+#keyword {
+  flex: 1 1 180px;
+  min-width: 140px;
+}
+
+#find {
+  height: 36px;
+  width: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--nav-color);
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+#find svg {
+  color: var(--background-color);
+  font-size: 18px;
+}
+
+/* Search results */
+#search-page {
+  padding: 2rem 0;
+}
+
+.post-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.5rem;
+  padding: 2rem 0;
+}
+
+.post-card {
+  border: 0.5px solid black;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+  text-align: left;
+}
+
+.post-image {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  display: block;
+}
+
+.post-caption,
+.post-location,
+.post-likes {
+  padding: 0.4rem 0.75rem;
+}
+
+.post-caption {
+  font-weight: 600;
+  padding-top: 0.75rem;
+}
+
+.post-location {
+  color: var(--text-color2);
+  font-size: 0.85rem;
+}
+
+.post-likes {
+  font-size: 0.8rem;
+  color: var(--text-color2);
+  padding-bottom: 0.75rem;
+}
+
+.error {
+  color: #b3261e;
+  text-align: center;
+}
