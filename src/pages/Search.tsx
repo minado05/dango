@@ -5,6 +5,11 @@ import NavBar from "../components/NavBar";
 import PostCard from "../components/PostCard";
 import type { Post } from "../types";
 
+interface SearchSummary {
+  summary: string;
+  restaurants: { name: string; mentions: string }[];
+}
+
 function Search() {
   const [searchParams] = useSearchParams();
   const keyword = searchParams.get("keyword") ?? "";
@@ -15,10 +20,14 @@ function Search() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const [summary, setSummary] = useState<SearchSummary | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+
   useEffect(() => {
     const runSearch = async () => {
       setLoading(true);
       setError("");
+      setSummary(null);
 
       let query = supabase
         .from("posts")
@@ -36,10 +45,40 @@ function Search() {
       if (queryError) {
         setError(queryError.message);
         setResults([]);
-      } else {
-        setResults((data as unknown as Post[]) ?? []);
+        setLoading(false);
+        return;
       }
+
+      const posts = (data as unknown as Post[]) ?? [];
+      setResults(posts);
       setLoading(false);
+
+      if (posts.length === 0) return;
+
+      const cacheKey = [keyword, city, country].filter(Boolean).join(" | ");
+      setSummaryLoading(true);
+      const { data: summaryData, error: summaryError } = await supabase.functions.invoke(
+        "summarize-search",
+        {
+          body: {
+            query: cacheKey,
+            posts: posts.map((post) => ({ id: post.id, caption: post.caption })),
+          },
+        }
+      );
+      setSummaryLoading(false);
+
+      if (summaryError) {
+        console.error("Failed to get AI summary:", summaryError);
+        return;
+      }
+      if (summaryData?.summary) {
+        try {
+          setSummary(JSON.parse(summaryData.summary) as SearchSummary);
+        } catch (parseError) {
+          console.error("Failed to parse AI summary:", parseError);
+        }
+      }
     };
 
     runSearch();
@@ -49,6 +88,22 @@ function Search() {
     <>
       <NavBar />
       <section id="search-page">
+        {summaryLoading && <p className="ai-summary">Summarizing...</p>}
+        {summary && (
+          <div className="ai-summary">
+            <p className="ai-summary-label">AI Summary:</p>
+            <p>{summary.summary}</p>
+            {summary.restaurants.length > 0 && (
+              <ol>
+                {summary.restaurants.map((restaurant) => (
+                  <li key={restaurant.name}>
+                    <strong>{restaurant.name}</strong> — {restaurant.mentions}
+                  </li>
+                ))}
+              </ol>
+            )}
+          </div>
+        )}
         <div className="post-grid">
           {loading && <p>Searching...</p>}
           {error && <p className="error">{error}</p>}

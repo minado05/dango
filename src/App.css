@@ -79,6 +79,21 @@ hr {
   text-align: center;
 }
 
+.ai-summary {
+  max-width: 700px;
+  margin: 0 auto 1.5rem;
+  padding: 12px 18px;
+  border: 0.5px solid black;
+  border-radius: 6px;
+  background: rgb(252, 236, 239);
+  color: var(--text-color2);
+}
+
+.ai-summary-label {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
 a {
   text-decoration: none;
   color: var(--text-color1, var(--text-color2));
