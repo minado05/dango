@@ -20,13 +20,27 @@ Backend: Supabase (Postgres, Auth, Storage)
    ```
 5. `npm install && npm run dev`
 
-## What's built so far
+## What's built
 
-- **Search** — a combined search bar (keyword + region → country → city cascading filter, preserving the
-  old app's dropdown UX) that queries `posts` by caption keyword and/or city, joined against `locations`,
-  `users`, and `post_images`. Lives at `src/components/SearchBar.tsx` and `src/pages/Search.tsx`.
+Full feature parity with the live Firebase app, on Supabase instead:
+
+- **Auth** — sign up / sign in via Supabase Auth. A database trigger (`handle_new_user`) auto-creates
+  the matching `public.users` profile row on signup, reading the display name from signup metadata.
+- **Search** — combined search bar (keyword + region → country → city cascading filter, matching the
+  live app's UX) that filters `posts` by caption keyword, city, and/or country. The bar also re-reads
+  its state from the URL on mount so it doesn't reset blank after a search.
+- **Home feed** — Following/Trending toggle (styled as a pill box matching the nav color). Trending
+  excludes your own posts; Following pulls posts from users you follow via the `follows` table.
+- **Post cards / detail page** — like+save combined into one action (`saved_posts` table). Liking your
+  own post is blocked both in the UI (button disabled) and at the database level (RLS policy), while
+  still allowing you to remove an already-existing save. `posts.like_count` is kept in sync automatically
+  by a database trigger instead of client-side increment calls.
+- **Add Post** — multi-image upload to the `post-images` storage bucket, city select, caption.
+- **Account page** — profile banner, follow button, sign out (only shown on your own profile), My
+  Posts vs Saved toggle (same pill-box styling as Following/Trending).
+- **Update Profile** — avatar upload to the `avatars` storage bucket, bio update.
 
 ## Not yet built
 
-Auth, post creation, image upload/storage, likes/saves, profile pages — this only covers the search flow
-so far as a first look at what the Supabase migration involves.
+The AI search-summary feature (the `search_cache` table already anticipates this) — summarizing top
+restaurants mentioned across search results via an LLM, likely as a Supabase Edge Function.

@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import NavBar from "../components/NavBar";
 import PostCard from "../components/PostCard";
-import SearchBar from "../components/SearchBar";
 import type { Post } from "../types";
 
 function Search() {
   const [searchParams] = useSearchParams();
   const keyword = searchParams.get("keyword") ?? "";
   const city = searchParams.get("city") ?? "";
+  const country = searchParams.get("country") ?? "";
 
   const [results, setResults] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
@@ -21,13 +22,12 @@ function Search() {
 
       let query = supabase
         .from("posts")
-        .select(
-          "*, user:users(*), location:locations!inner(*), images:post_images(*)"
-        )
+        .select("*, user:users(*), location:locations!inner(*), images:post_images(*)")
         .order("created_at", { ascending: false });
 
       if (keyword) query = query.ilike("caption", `%${keyword}%`);
       if (city) query = query.eq("location.city", city);
+      else if (country) query = query.eq("location.country", country);
 
       const { data, error: queryError } = await query;
 
@@ -41,11 +41,11 @@ function Search() {
     };
 
     runSearch();
-  }, [keyword, city]);
+  }, [keyword, city, country]);
 
   return (
     <section id="search-page">
-      <SearchBar />
+      <NavBar />
       <div className="post-grid">
         {loading && <p>Searching...</p>}
         {error && <p className="error">{error}</p>}

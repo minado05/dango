@@ -1,24 +1,44 @@
 import { FiSearch } from "react-icons/fi";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { fetchLocations } from "../lib/locations";
 import type { Location } from "../types";
 
 function SearchBar() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
-  const [keyword, setKeyword] = useState("");
+  const [keyword, setKeyword] = useState(searchParams.get("keyword") ?? "");
   const [locations, setLocations] = useState<Location[]>([]);
 
+  const initialCity = searchParams.get("city") ?? "";
+  const initialCountry = searchParams.get("country") ?? "";
+
   const [selectedRegion, setSelectedRegion] = useState("");
-  const [selectedCountry, setSelectedCountry] = useState("");
-  const [selectedCity, setSelectedCity] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState(initialCountry);
+  const [selectedCity, setSelectedCity] = useState(initialCity);
 
   useEffect(() => {
     fetchLocations()
       .then(setLocations)
       .catch(() => setLocations([]));
   }, []);
+
+  // Once locations load, derive the region/country for whatever city or
+  // country came in via the URL, so the bar reflects the current search
+  // instead of resetting blank.
+  useEffect(() => {
+    if (locations.length === 0) return;
+    const city = initialCity || selectedCity;
+    const match = city
+      ? locations.find((location) => location.city === city)
+      : locations.find((location) => location.country === initialCountry);
+    if (match) {
+      setSelectedRegion(match.region);
+      if (!selectedCountry) setSelectedCountry(match.country);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locations]);
 
   const regions = useMemo(
     () => Array.from(new Set(locations.map((location) => location.region))),
@@ -69,18 +89,12 @@ function SearchBar() {
     const params = new URLSearchParams();
     if (keyword.trim()) params.set("keyword", keyword.trim());
     if (selectedCity) params.set("city", selectedCity);
+    else if (selectedCountry) params.set("country", selectedCountry);
     navigate(`/search?${params.toString()}`);
   };
 
   return (
     <form id="search-wrap" onSubmit={handleSubmit}>
-      <input
-        id="keyword"
-        type="text"
-        placeholder="Search posts..."
-        value={keyword}
-        onChange={(e) => setKeyword(e.target.value)}
-      />
       {/* region dropdown */}
       <select id="region" value={selectedRegion} onChange={handleRegionChange}>
         <option value="">Select a region</option>
@@ -108,6 +122,13 @@ function SearchBar() {
           </option>
         ))}
       </select>
+      <input
+        id="keyword"
+        type="text"
+        placeholder="Search posts..."
+        value={keyword}
+        onChange={(e) => setKeyword(e.target.value)}
+      />
       <button id="find" type="submit" aria-label="Search">
         <FiSearch />
       </button>
