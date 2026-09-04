@@ -101,7 +101,7 @@ function Search() {
         {summaryLoading && <p className="ai-summary">Summarizing...</p>}
         {summary && (
           <div className="ai-summary">
-            <p className="ai-summary-label">AI Summary:</p>
+            <p className="ai-summary-label">✦ AI Summary:</p>
             <p>{summary.summary}</p>
             {summary.restaurants.length > 0 && (
               <ol>

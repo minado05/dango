@@ -6,13 +6,14 @@ queried relationally (by caption keyword, city, tags, etc.) instead of denormali
 ## Features
 
 - Create posts - share restaurant and food itineraries with multiple images
-- User interactions - save posts (combined like/save) and follow/unfollow users
+- Social interactions - save posts (combined like/save) and follow/unfollow other users
 - Location-based & keyword search - filter by region, country, city, and/or caption keyword; the search bar
   remembers your last search instead of resetting
 - AI search summaries - a Gemini-generated summary and top-restaurant list for your search results, cached
   to avoid repeat AI calls on the same search
-- Custom feeds - Following, Explore (tailored to the locations you save from most, falling back to Trending
-  logic for new users), and Trending (most-saved posts, excluding your own)
+- Three feeds - a personalized Explore feed (tailored to the locations you save from most, falling back to
+  Trending logic for new users), Trending (most-saved posts overall, excluding your own), and Following
+  (posts from people you follow)
 - Profile pages - following/followers/saves-received stats with clickable following/followers lists, bio &
   avatar management
 - Dynamic post and profile pages
