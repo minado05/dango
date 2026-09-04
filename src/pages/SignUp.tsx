@@ -53,10 +53,15 @@ function SignUp() {
     });
 
     if (error) {
+      console.error("Sign up failed:", error);
       if (error.message.toLowerCase().includes("registered")) {
         setErrors({ email: "This email is already in use" });
-      } else {
+      } else if (error.message.toLowerCase().includes("rate limit")) {
+        setErrors({ confirmPassword: "Too many signup attempts right now — please wait a bit and try again." });
+      } else if (error.message.toLowerCase().includes("email")) {
         setErrors({ email: error.message });
+      } else {
+        setErrors({ confirmPassword: error.message });
       }
       return;
     }

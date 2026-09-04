@@ -22,7 +22,9 @@ function Search() {
 
       let query = supabase
         .from("posts")
-        .select("*, user:users(*), location:locations!inner(*), images:post_images(*)")
+        .select(
+          "*, user:users!user_id(*), location:locations!location_id!inner(*), images:post_images!post_id(*)"
+        )
         .order("created_at", { ascending: false });
 
       if (keyword) query = query.ilike("caption", `%${keyword}%`);
@@ -44,17 +46,19 @@ function Search() {
   }, [keyword, city, country]);
 
   return (
-    <section id="search-page">
+    <>
       <NavBar />
-      <div className="post-grid">
-        {loading && <p>Searching...</p>}
-        {error && <p className="error">{error}</p>}
-        {!loading && !error && results.length === 0 && <p>No posts found.</p>}
-        {results.map((post) => (
-          <PostCard key={post.id} post={post} />
-        ))}
-      </div>
-    </section>
+      <section id="search-page">
+        <div className="post-grid">
+          {loading && <p>Searching...</p>}
+          {error && <p className="error">{error}</p>}
+          {!loading && !error && results.length === 0 && <p>No posts found.</p>}
+          {results.map((post) => (
+            <PostCard key={post.id} post={post} />
+          ))}
+        </div>
+      </section>
+    </>
   );
 }
 

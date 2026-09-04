@@ -11,7 +11,8 @@ Backend: Supabase (Postgres, Auth, Storage)
 ## Setup
 
 1. Create a project at [supabase.com](https://supabase.com/dashboard).
-2. In the project's SQL editor, run `supabase/schema.sql`, then `supabase/seed.sql`.
+2. In the project's SQL editor, run `supabase/schema.sql`, then `supabase/seed.sql`. See
+   `supabase/SCHEMA.md` for what each table does and how they relate.
 3. In Project Settings → API, copy the Project URL and anon public key.
 4. Create `.env` from `.env` (already present) and fill in:
    ```
@@ -31,10 +32,10 @@ Full feature parity with the live Firebase app, on Supabase instead:
   its state from the URL on mount so it doesn't reset blank after a search.
 - **Home feed** — Following/Trending toggle (styled as a pill box matching the nav color). Trending
   excludes your own posts; Following pulls posts from users you follow via the `follows` table.
-- **Post cards / detail page** — like+save combined into one action (`saved_posts` table). Liking your
-  own post is blocked both in the UI (button disabled) and at the database level (RLS policy), while
-  still allowing you to remove an already-existing save. `posts.like_count` is kept in sync automatically
-  by a database trigger instead of client-side increment calls.
+- **Post cards / detail page** — saving is the "like" action (`saved_posts` table). Saving your own post
+  is blocked both in the UI (button disabled) and at the database level (RLS policy), while still allowing
+  you to remove an already-existing save. `posts.save_count` is kept in sync automatically by a database
+  trigger instead of client-side increment calls.
 - **Add Post** — multi-image upload to the `post-images` storage bucket, city select, caption.
 - **Account page** — profile banner, follow button, sign out (only shown on your own profile), My
   Posts vs Saved toggle (same pill-box styling as Following/Trending).
