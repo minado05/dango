@@ -13,8 +13,9 @@ function SearchBar() {
 
   const initialCity = searchParams.get("city") ?? "";
   const initialCountry = searchParams.get("country") ?? "";
+  const initialRegion = searchParams.get("region") ?? "";
 
-  const [selectedRegion, setSelectedRegion] = useState("");
+  const [selectedRegion, setSelectedRegion] = useState(initialRegion);
   const [selectedCountry, setSelectedCountry] = useState(initialCountry);
   const [selectedCity, setSelectedCity] = useState(initialCity);
 
@@ -90,6 +91,7 @@ function SearchBar() {
     if (keyword.trim()) params.set("keyword", keyword.trim());
     if (selectedCity) params.set("city", selectedCity);
     else if (selectedCountry) params.set("country", selectedCountry);
+    else if (selectedRegion) params.set("region", selectedRegion);
     navigate(`/search?${params.toString()}`);
   };
 

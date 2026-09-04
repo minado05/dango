@@ -15,6 +15,7 @@ function Search() {
   const keyword = searchParams.get("keyword") ?? "";
   const city = searchParams.get("city") ?? "";
   const country = searchParams.get("country") ?? "";
+  const region = searchParams.get("region") ?? "";
 
   const [results, setResults] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
@@ -39,6 +40,7 @@ function Search() {
       if (keyword) query = query.ilike("caption", `%${keyword}%`);
       if (city) query = query.eq("location.city", city);
       else if (country) query = query.eq("location.country", country);
+      else if (region) query = query.eq("location.region", region);
 
       const { data, error: queryError } = await query;
 
@@ -55,14 +57,22 @@ function Search() {
 
       if (posts.length === 0) return;
 
-      const cacheKey = [keyword, city, country].filter(Boolean).join(" | ");
+      const cacheKey = [keyword, city, country, region].filter(Boolean).join(" | ") || "all posts";
+      // Cap what gets sent to the summarizer at the top 10 most-saved posts,
+      // regardless of how many results the search itself returned — keeps
+      // the AI call fast, cheap, and focused instead of diluted across
+      // potentially hundreds of captions on a broad search.
+      const postsForSummary = [...posts]
+        .sort((a, b) => b.save_count - a.save_count)
+        .slice(0, 10);
+
       setSummaryLoading(true);
       const { data: summaryData, error: summaryError } = await supabase.functions.invoke(
         "summarize-search",
         {
           body: {
             query: cacheKey,
-            posts: posts.map((post) => ({ id: post.id, caption: post.caption })),
+            posts: postsForSummary.map((post) => ({ id: post.id, caption: post.caption })),
           },
         }
       );
@@ -82,7 +92,7 @@ function Search() {
     };
 
     runSearch();
-  }, [keyword, city, country]);
+  }, [keyword, city, country, region]);
 
   return (
     <>
