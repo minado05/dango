@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import { embedText } from "../lib/embeddings";
 import NavBar from "../components/NavBar";
 import PostCard from "../components/PostCard";
 import type { Post } from "../types";
@@ -9,6 +10,9 @@ interface SearchSummary {
   summary: string;
   restaurants: { name: string; mentions: string }[];
 }
+
+const POST_JOIN_SELECT =
+  "*, user:users!user_id(*), location:locations!location_id!inner(*), images:post_images!post_id(*)";
 
 function Search() {
   const [searchParams] = useSearchParams();
@@ -25,33 +29,65 @@ function Search() {
   const [summaryLoading, setSummaryLoading] = useState(false);
 
   useEffect(() => {
-    const runSearch = async () => {
-      setLoading(true);
-      setError("");
-      setSummary(null);
-
-      let query = supabase
-        .from("posts")
-        .select(
-          "*, user:users!user_id(*), location:locations!location_id!inner(*), images:post_images!post_id(*)"
-        )
-        .order("created_at", { ascending: false });
+    // Plain keyword/location query — substring match on caption, used
+    // whenever there's no keyword, or as a fallback if semantic search
+    // can't run (embedding failed) or comes up empty (e.g. the post
+    // predates semantic search and was never backfilled with an embedding).
+    const runPlainQuery = async () => {
+      let query = supabase.from("posts").select(POST_JOIN_SELECT).order("created_at", {
+        ascending: false,
+      });
 
       if (keyword) query = query.ilike("caption", `%${keyword}%`);
       if (city) query = query.eq("location.city", city);
       else if (country) query = query.eq("location.country", country);
       else if (region) query = query.eq("location.region", region);
 
-      const { data, error: queryError } = await query;
+      return query;
+    };
 
-      if (queryError) {
-        setError(queryError.message);
-        setResults([]);
-        setLoading(false);
-        return;
+    const runSearch = async () => {
+      setLoading(true);
+      setError("");
+      setSummary(null);
+
+      let posts: Post[] = [];
+
+      if (keyword) {
+        const embedding = await embedText(keyword);
+        if (embedding) {
+          const { data, error: rpcError } = await supabase
+            .rpc("match_posts", {
+              query_embedding: embedding,
+              match_count: 30,
+              filter_city: city || null,
+              filter_country: !city && country ? country : null,
+              filter_region: !city && !country && region ? region : null,
+            })
+            .select(POST_JOIN_SELECT);
+
+          if (rpcError) {
+            console.error("Semantic search failed, falling back to keyword match:", rpcError);
+          } else {
+            posts = (data as unknown as Post[]) ?? [];
+          }
+        }
       }
 
-      const posts = (data as unknown as Post[]) ?? [];
+      // Fall back to a plain substring/location query if there was no
+      // keyword to embed, the embedding call failed, or semantic search
+      // came back empty (likely an un-backfilled older post).
+      if (posts.length === 0) {
+        const { data, error: queryError } = await runPlainQuery();
+        if (queryError) {
+          setError(queryError.message);
+          setResults([]);
+          setLoading(false);
+          return;
+        }
+        posts = (data as unknown as Post[]) ?? [];
+      }
+
       setResults(posts);
       setLoading(false);
 

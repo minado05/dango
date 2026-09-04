@@ -1,5 +1,6 @@
 -- Dango schema
 create extension if not exists "pgcrypto";
+create extension if not exists "vector";
 
 create table public.users (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -29,7 +30,10 @@ create table public.posts (
   location_id bigint not null references public.locations(id),
   caption text not null default '',
   save_count integer not null default 0,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  -- Caption embedding for semantic search. 768 dims matches Gemini's
+  -- text-embedding-004; adjust if the actual embedding model differs.
+  embedding vector(768)
 );
 
 create table public.post_images (
@@ -76,6 +80,35 @@ create index post_images_post_id_idx on public.post_images (post_id);
 create index post_tags_tag_id_idx on public.post_tags (tag_id);
 create index follows_followed_id_idx on public.follows (followed_id);
 create index saved_posts_post_id_idx on public.saved_posts (post_id);
+
+-- Semantic search: find posts whose caption embedding is closest to a given
+-- query embedding, optionally narrowed by location. Called from the client
+-- via supabase.rpc("match_posts", {...}); since it returns setof posts,
+-- relationships (user, location, images) can still be embedded on top via
+-- .select(), same as querying the posts table directly.
+-- No vector index yet (ivfflat/hnsw) since the table is tiny right now —
+-- add one once there are enough rows for it to be worth the overhead.
+create or replace function public.match_posts(
+  query_embedding vector(768),
+  match_count int default 10,
+  filter_city text default null,
+  filter_country text default null,
+  filter_region text default null
+)
+returns setof public.posts
+language sql
+stable
+as $$
+  select p.*
+  from public.posts p
+  left join public.locations l on l.id = p.location_id
+  where p.embedding is not null
+    and (filter_city is null or l.city = filter_city)
+    and (filter_country is null or l.country = filter_country)
+    and (filter_region is null or l.region = filter_region)
+  order by p.embedding <=> query_embedding
+  limit match_count;
+$$;
 
 -- Keep posts.save_count in sync with saved_posts automatically,
 -- instead of relying on client-side increment/decrement calls.

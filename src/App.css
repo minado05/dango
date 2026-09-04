@@ -79,6 +79,12 @@ hr {
   text-align: center;
 }
 
+.signin-notice {
+  text-align: center;
+  color: var(--text-color2);
+  padding: 2rem 0;
+}
+
 .ai-summary {
   max-width: 700px;
   margin: 0 auto 1.5rem;

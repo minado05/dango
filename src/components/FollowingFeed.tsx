@@ -42,6 +42,10 @@ function FollowingFeed() {
     getFollowingPosts();
   }, [user]);
 
+  if (!user) {
+    return <p className="signin-notice">Please sign in to access this feature.</p>;
+  }
+
   return (
     <div className="post-grid">
       {followingPosts.map((post) => (

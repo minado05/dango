@@ -5,6 +5,7 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/auth";
 import { uploadFile } from "../lib/storage";
 import { fetchLocations } from "../lib/locations";
+import { embedText } from "../lib/embeddings";
 import type { Location } from "../types";
 
 const AddPost = () => {
@@ -57,6 +58,21 @@ const AddPost = () => {
       console.error("Failed to create post:", postError);
       alert("Couldn't create the post — please try again.");
       return;
+    }
+
+    // Best-effort: if this fails, the post still exists, it just won't show
+    // up in semantic search results until re-saved or backfilled.
+    if (caption.trim()) {
+      const embedding = await embedText(caption);
+      if (embedding) {
+        const { error: embeddingError } = await supabase
+          .from("posts")
+          .update({ embedding })
+          .eq("id", post.id);
+        if (embeddingError) {
+          console.error("Failed to save embedding:", embeddingError);
+        }
+      }
     }
 
     try {
