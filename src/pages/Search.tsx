@@ -58,13 +58,13 @@ function Search() {
       if (posts.length === 0) return;
 
       const cacheKey = [keyword, city, country, region].filter(Boolean).join(" | ") || "all posts";
-      // Cap what gets sent to the summarizer at the top 10 most-saved posts,
+      // Cap what gets sent to the summarizer at the top 20 most-saved posts,
       // regardless of how many results the search itself returned — keeps
       // the AI call fast, cheap, and focused instead of diluted across
       // potentially hundreds of captions on a broad search.
       const postsForSummary = [...posts]
         .sort((a, b) => b.save_count - a.save_count)
-        .slice(0, 10);
+        .slice(0, 20);
 
       setSummaryLoading(true);
       const { data: summaryData, error: summaryError } = await supabase.functions.invoke(
