@@ -257,6 +257,7 @@ a {
 .post-container {
   display: flex;
   flex-direction: column;
+  box-sizing: border-box; /* keep padding/border inside the declared 250px, not added on top */
   width: 250px;
   height: fit-content;
   border: 1px solid black;
@@ -279,6 +280,24 @@ a {
   display: flex;
   flex-wrap: wrap;
 }
+
+/* Search results: CSS Grid with dense auto-flow instead of flex-wrap.
+   auto-fill lets the browser compute column count natively (same fitting
+   math as flex-wrap, no JS measurement needed), and `dense` fills row 1
+   left-to-right, then backfills any gaps left by shorter cards in that
+   same left-to-right scan order — the row-span per card is set in JS
+   (useGridRowSpans in Search.tsx) since grid can't measure organic content
+   height on its own. */
+#search-page .post-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 250px);
+  grid-auto-rows: 10px;
+  grid-auto-flow: row dense;
+  justify-content: center;
+  gap: 20px;
+  width: 100%;
+}
+
 
 .post-profile-circle {
   width: 30px;

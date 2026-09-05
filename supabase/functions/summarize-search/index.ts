@@ -27,7 +27,7 @@ async function summarizeWithGemini(query: string, posts: PostInput[]): Promise<S
 
   const prompt = `You are summarizing restaurant posts from a food-itinerary app for someone who searched "${query}".
 
-Here are the matching post captions:
+Here are the matching post captions, already ordered from most to least relevant to the search:
 ${captionsList}
 
 Respond with ONLY raw JSON — no markdown, no code fences, no commentary before or after — matching this exact shape:
@@ -39,7 +39,7 @@ Respond with ONLY raw JSON — no markdown, no code fences, no commentary before
 }
 
 Rules:
-- List at most the top 5 restaurants, ranked by how much they're mentioned or praised.
+- List at most the top 5 restaurants named in the captions, in the same order as the captions above (most relevant first) — do NOT reorder by how often a restaurant is mentioned or praised, preserve the given caption order.
 - Only include restaurant names that are actually named in the captions above — never invent names.
 - If fewer than 5 distinct restaurants are named, only include the ones that are actually there.
 - If no specific restaurant names appear at all, return an empty "restaurants" array and use "summary" to describe the general themes instead.`;

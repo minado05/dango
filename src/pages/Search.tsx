@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { embedText } from "../lib/embeddings";
@@ -9,6 +9,49 @@ import type { Post } from "../types";
 interface SearchSummary {
   summary: string;
   restaurants: { name: string; mentions: string }[];
+}
+
+// Matches grid-auto-rows/gap in App.css.
+const GRID_ROW_HEIGHT = 10;
+const GRID_ROW_GAP = 20;
+
+// CSS Grid's `auto-fill` + `grid-auto-flow: dense` handles the actual
+// layout natively (fills row 1 left-to-right, then backfills any gaps left
+// by shorter cards in that same scan order) — the browser computes column
+// count itself, so there's no JS width math to drift out of sync with
+// Explore's flex-wrap grid. The only JS needed is telling each card how
+// many grid rows tall it actually is, since grid can't measure organic
+// content height on its own.
+function useGridRowSpans(containerRef: React.RefObject<HTMLDivElement | null>, deps: unknown[]) {
+  const applySpans = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    for (const child of Array.from(container.children)) {
+      const height = (child as HTMLElement).getBoundingClientRect().height;
+      const span = Math.ceil((height + GRID_ROW_GAP) / (GRID_ROW_HEIGHT + GRID_ROW_GAP));
+      (child as HTMLElement).style.gridRowEnd = `span ${span}`;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [containerRef]);
+
+  useEffect(() => {
+    applySpans();
+    // Post images load asynchronously and change each card's height after
+    // the initial layout, so re-run once they've all loaded too. A cached
+    // image's `load` event fires immediately on attachment (or may have
+    // already fired before we got here), so `complete` needs checking too
+    // — otherwise cards with cached images keep their too-short initial
+    // span forever, squeezing them together instead of properly spacing.
+    const container = containerRef.current;
+    const images = container ? Array.from(container.querySelectorAll("img")) : [];
+    const pending = images.filter((img) => !img.complete);
+
+    if (pending.length !== images.length) applySpans(); // some were already cached
+
+    pending.forEach((img) => img.addEventListener("load", applySpans));
+    return () => pending.forEach((img) => img.removeEventListener("load", applySpans));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
 }
 
 const POST_JOIN_SELECT =
@@ -27,6 +70,9 @@ function Search() {
 
   const [summary, setSummary] = useState<SearchSummary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
+
+  const gridRef = useRef<HTMLDivElement>(null);
+  useGridRowSpans(gridRef, [results]);
 
   useEffect(() => {
     // Plain keyword/location query — substring match on caption, used
@@ -94,13 +140,12 @@ function Search() {
       if (posts.length === 0) return;
 
       const cacheKey = [keyword, city, country, region].filter(Boolean).join(" | ") || "all posts";
-      // Cap what gets sent to the summarizer at the top 20 most-saved posts,
-      // regardless of how many results the search itself returned — keeps
-      // the AI call fast, cheap, and focused instead of diluted across
-      // potentially hundreds of captions on a broad search.
-      const postsForSummary = [...posts]
-        .sort((a, b) => b.save_count - a.save_count)
-        .slice(0, 20);
+      // Cap what gets sent to the summarizer at 20 posts, keeping whatever
+      // order `posts` is already in — for a keyword search that's the
+      // embedding-similarity order from match_posts (closest match first),
+      // so the AI summary's restaurant ranking reflects search relevance
+      // instead of being re-sorted by save_count.
+      const postsForSummary = posts.slice(0, 20);
 
       setSummaryLoading(true);
       const { data: summaryData, error: summaryError } = await supabase.functions.invoke(
@@ -150,7 +195,7 @@ function Search() {
             )}
           </div>
         )}
-        <div className="post-grid">
+        <div className="post-grid" ref={gridRef}>
           {loading && <p>Searching...</p>}
           {error && <p className="error">{error}</p>}
           {!loading && !error && results.length === 0 && <p>No posts found.</p>}
